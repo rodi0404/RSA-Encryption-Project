@@ -459,6 +459,8 @@ with tab2:
                         **Conversions:** {ascii_display}
 
                         **ASCII values:** {ascii_values}
+
+                        📚 [Learn more about ASCII codes](https://www.ascii-code.com)
                         """
                     },
                     {
@@ -469,8 +471,8 @@ with tab2:
 
                         Where e = {encrypt_e:,}, n = {encrypt_n:,}
 
-                        Calculations:
-                        """ + "\n".join([f"- '{chars[i]}'({ascii_values[i]}) → {ascii_values[i]}^{encrypt_e:,} mod {encrypt_n:,} = {encrypted[i]:,}" for i in range(len(chars))])
+                        **Calculations:** {", ".join([f"'{chars[i]}'({ascii_values[i]}) → {ascii_values[i]}^{encrypt_e:,} mod {encrypt_n:,} = {encrypted[i]:,}" for i in range(len(chars))])}
+                        """
                     },
                     {
                         "title": "**Step 4:** Collect into encrypted list",
@@ -612,8 +614,8 @@ with tab3:
 
                                 Where d = {decrypt_d:,}, n = {decrypt_n:,}
 
-                                Calculations:
-                                """ + "\n".join([f"- {encrypted_list[i]}^{decrypt_d:,} mod {decrypt_n:,} = {ascii_values[i]}" for i in range(len(encrypted_list))])
+                                **Calculations:** {", ".join([f"{encrypted_list[i]}^{decrypt_d:,} mod {decrypt_n:,} = {ascii_values[i]}" for i in range(len(encrypted_list))])}
+                                """
                             },
                             {
                                 "title": "**Step 3:** Convert ASCII to characters",
@@ -621,8 +623,10 @@ with tab3:
                                 "content": f"""
                                 **Formula:** ASCII → chr(ASCII)
 
-                                Conversions:
-                                """ + "\n".join([f"- {ascii_values[i]} → '{chars[i]}'" for i in range(len(ascii_values))])
+                                **Conversions:** {", ".join([f"{ascii_values[i]}→'{chars[i]}'" for i in range(len(ascii_values))])}
+
+                                📚 [Learn more about ASCII codes](https://www.ascii-code.com)
+                                """
                             },
                             {
                                 "title": "**Step 4:** Combine into message",

@@ -116,8 +116,28 @@ if "keys_generated" not in st.session_state:
     st.session_state.encryption_animation_start_time = None
     st.session_state.encryption_animation_paused = False
     st.session_state.encryption_animation_pause_time = 0
+    st.session_state.decryption_animation_step = 0
+    st.session_state.decryption_animation_start_time = None
+    st.session_state.decryption_animation_paused = False
+    st.session_state.decryption_animation_pause_time = 0
+    st.session_state.active_tab = 0
 
-tab0, tab1, tab2, tab3, tab4 = st.tabs(["📚 Tutorial", "🔑 Generate Keys", "🔒 Encrypt", "🔓 Decrypt", "📖Infos"])
+tabs = st.tabs(["📚 Tutorial", "🔑 Generate Keys", "🔒 Encrypt", "🔓 Decrypt", "📖Infos"])
+tab0, tab1, tab2, tab3, tab4 = tabs
+
+# If active_tab is set to 1, use JavaScript to click the Generate Keys tab
+if st.session_state.active_tab == 1:
+    st.session_state.active_tab = 0  # Reset immediately so it can be triggered again
+    # Click the Generate Keys tab using Streamlit's internal mechanism
+    import streamlit.components.v1 as components
+    components.html("""
+    <script>
+    var tabs = window.parent.document.querySelectorAll('[role="tab"]');
+    if (tabs.length > 1) {
+        tabs[1].click();
+    }
+    </script>
+    """, height=0)
 
 with tab0:
     st.header("📚 How to Use This App")
@@ -129,7 +149,7 @@ with tab0:
             "content": """
             Welcome! This app teaches you how **RSA encryption** works step by step.
 
-            RSA is the encryption used in real-world applications like:
+            RSA is the encryption used in real-world applicaStions like:
             - 🔒 HTTPS websites
             - 📧 Email encryption
             - 💳 Digital signatures
@@ -138,6 +158,23 @@ with tab0:
             Let's learn how it works together!
             """,
             "emoji": "👋"
+        },
+        {
+            "title": "Before You Start",
+            "content": """
+            **This app assumes you understand the basics of asymmetric encryption:**
+
+            - ✅ What public keys are (can be shared with anyone)
+            - ✅ What private keys are (must be kept secret)
+            - ✅ How public keys encrypt messages
+            - ✅ How private keys decrypt messages
+            - ✅ Why you can't decrypt with the wrong key
+
+            **If you're new to these concepts,** it's helpful to have a basic understanding before diving in. However, this app is designed to teach you *how* RSA specifically works mathematically!
+
+            Ready? Let's go! 🚀
+            """,
+            "emoji": "⚠️"
         },
         {
             "title": "Step 1: Generate Keys",
@@ -243,13 +280,18 @@ with tab0:
             st.rerun()
 
     with col_right:
-        if st.button("Next →", use_container_width=True, disabled=st.session_state.tutorial_step == len(tutorial_steps) - 1):
-            st.session_state.tutorial_step += 1
+        is_last_page = st.session_state.tutorial_step == len(tutorial_steps) - 1
+        if st.button("Next →", use_container_width=True, disabled=False):
+            if is_last_page:
+                # Go to Generate Keys tab
+                st.session_state.active_tab = 1
+            else:
+                st.session_state.tutorial_step += 1
             st.rerun()
 
     with col_center:
         step_num = st.session_state.tutorial_step + 1
-        st.markdown(f"<p style='text-align: center;'>Step {step_num} of {len(tutorial_steps)}</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: center;'>Page {step_num} of {len(tutorial_steps)}</p>", unsafe_allow_html=True)
 
     # Display current step
     st.markdown("---")
@@ -570,11 +612,10 @@ with tab2:
                     }
                 ]
 
-                st.markdown("---")
-                st.subheader("📐 Step-by-Step Encryption Breakdown")
-
                 # Animation system for encryption steps
                 if st.session_state.encryption_animation_step < len(encryption_steps):
+                    st.markdown("---")
+                    st.subheader("📐 Step-by-Step Encryption Breakdown")
                     current_enc_step = encryption_steps[st.session_state.encryption_animation_step]
                     step_duration = current_enc_step.get("duration", 6)
 
@@ -674,9 +715,122 @@ with tab3:
                 if isinstance(encrypted_list, list):
                     try:
                         decrypted = decrypt(encrypted_list, decrypt_d, decrypt_n)
-                        st.success("✅ Decrypted!")
-                        st.write(f"**Decrypted:**")
-                        st.code(decrypted, language="text")
+
+                        # Create step-by-step breakdown
+                        ascii_values = [pow(num, decrypt_d, decrypt_n) for num in encrypted_list]
+                        chars = [chr(val) for val in ascii_values]
+                        ascii_display = ", ".join([f"{encrypted_list[i]}→{ascii_values[i]}" for i in range(len(encrypted_list))])
+
+                        decryption_steps = [
+                            {
+                                "title": "**Step 1:** Encrypted list received",
+                                "duration": 5,
+                                "content": f"""
+                                **Encrypted numbers:** {encrypted_list}
+
+                                Each number represents one encrypted character.
+                                """
+                            },
+                            {
+                                "title": "**Step 2:** Decrypt each number",
+                                "duration": 10,
+                                "content": f"""
+                                **Formula:** ASCII = encrypted^d mod n
+
+                                Where d = {decrypt_d:,}, n = {decrypt_n:,}
+
+                                **Calculations:**
+                                """ + "\n".join([f"- {encrypted_list[i]}^{decrypt_d:,} mod {decrypt_n:,} = **{ascii_values[i]}**" for i in range(len(encrypted_list))])
+                            },
+                            {
+                                "title": "**Step 3:** Convert ASCII to characters",
+                                "duration": 8,
+                                "content": f"""
+                                **Formula:** ASCII → chr(ASCII)
+
+                                **Conversions:**
+                                """ + "\n".join([f"- {ascii_values[i]} → **'{chars[i]}'**" for i in range(len(ascii_values))])
+                            },
+                            {
+                                "title": "**Step 4:** Combine into message",
+                                "duration": 6,
+                                "content": f"""
+                                **Result:** All characters combined into final message
+
+                                **Decrypted message:** "{decrypted}"
+                                """
+                            }
+                        ]
+
+                        # Animation system for decryption steps
+                        if st.session_state.decryption_animation_step < len(decryption_steps):
+                            st.markdown("---")
+                            st.subheader("📐 Step-by-Step Decryption Breakdown")
+
+                            current_dec_step = decryption_steps[st.session_state.decryption_animation_step]
+                            step_duration = current_dec_step.get("duration", 6)
+
+                            st.markdown(f"### 🔐 {current_dec_step['title']}")
+                            st.markdown(current_dec_step['content'])
+                            st.progress((st.session_state.decryption_animation_step + 1) / len(decryption_steps))
+
+                            # Skip, Pause/Resume buttons
+                            col_skip, col_pause, col_timer = st.columns([1, 1, 3])
+
+                            with col_skip:
+                                if st.button("⏭️ Skip", key=f"dec_skip_{st.session_state.decryption_animation_step}", use_container_width=True):
+                                    st.session_state.decryption_animation_step += 1
+                                    st.session_state.decryption_animation_start_time = None
+                                    st.session_state.decryption_animation_paused = False
+                                    st.rerun()
+
+                            with col_pause:
+                                pause_button_text = "▶️ Resume" if st.session_state.decryption_animation_paused else "⏸️ Pause"
+                                if st.button(pause_button_text, key=f"dec_pause_{st.session_state.decryption_animation_step}", use_container_width=True):
+                                    st.session_state.decryption_animation_paused = not st.session_state.decryption_animation_paused
+                                    if st.session_state.decryption_animation_paused:
+                                        st.session_state.decryption_animation_pause_time = time.time()
+                                    else:
+                                        pause_duration = time.time() - st.session_state.decryption_animation_pause_time
+                                        st.session_state.decryption_animation_start_time += pause_duration
+                                    st.rerun()
+
+                            # Timer
+                            if st.session_state.decryption_animation_start_time is None:
+                                st.session_state.decryption_animation_start_time = time.time()
+
+                            elapsed = time.time() - st.session_state.decryption_animation_start_time
+                            remaining = max(0, step_duration - int(elapsed))
+
+                            with col_timer:
+                                if remaining > 0:
+                                    progress_pct = remaining / step_duration
+                                    timer_text = "⏸️ PAUSED" if st.session_state.decryption_animation_paused else f"⏱️ Next step in {remaining}s"
+                                    st.progress(progress_pct, text=timer_text)
+
+                                    if not st.session_state.decryption_animation_paused:
+                                        time.sleep(0.1)
+                                        st.rerun()
+                                else:
+                                    st.session_state.decryption_animation_step += 1
+                                    st.session_state.decryption_animation_start_time = None
+                                    st.session_state.decryption_animation_paused = False
+                                    st.rerun()
+                        else:
+                            # After animation completes, show final result
+                            st.markdown("---")
+                            st.success("✅ Decryption Complete!")
+                            st.write(f"**Original:** {encrypted_list}")
+                            st.code(decrypted, language="text")
+
+                            st.markdown("---")
+                            st.subheader("📐 Complete Process (scroll down to see)")
+
+                            # Show all steps in expandable form for review
+                            for i, step in enumerate(decryption_steps, 1):
+                                with st.expander(step['title']):
+                                    st.markdown(step['content'])
+
                     except Exception as e:
                         st.error(f"❌ Decryption failed: {str(e)}")
                         st.info("💡 Make sure you're using the correct private key (d, n) that matches the encryption key (e, n)")

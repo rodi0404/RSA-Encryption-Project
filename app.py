@@ -2,6 +2,7 @@ import streamlit as st
 from sympy import randprime
 import math
 import time
+import textwrap
 from content import get_tutorial_steps, get_info_content
 
 st.set_page_config(page_title="RSA Encryption Tool", layout="centered", initial_sidebar_state="expanded")
@@ -466,13 +467,13 @@ with tab2:
                     {
                         "title": "**Step 3:** Encrypt each ASCII value",
                         "duration": 10,
-                        "content": f"""
+                        "content": textwrap.dedent(f"""
                         **Formula:** encrypted = ASCII^e mod n
 
                         Where e = {encrypt_e:,}, n = {encrypt_n:,}
 
-                        **Calculations:** {", ".join([f"'{chars[i]}'({ascii_values[i]}) → {ascii_values[i]}^{encrypt_e:,} mod {encrypt_n:,} = {encrypted[i]:,}" for i in range(len(chars))])}
-                        """
+                        **Calculations:**
+                        """).strip() + "\n\n" + "\n\n".join([f"'{chars[i]}'({ascii_values[i]}) → {ascii_values[i]}^{encrypt_e:,} mod {encrypt_n:,} = {encrypted[i]:,}" for i in range(len(chars))])
                     },
                     {
                         "title": "**Step 4:** Collect into encrypted list",
@@ -609,13 +610,13 @@ with tab3:
                             {
                                 "title": "**Step 2:** Decrypt each number",
                                 "duration": 10,
-                                "content": f"""
+                                "content": textwrap.dedent(f"""
                                 **Formula:** ASCII = encrypted^d mod n
 
                                 Where d = {decrypt_d:,}, n = {decrypt_n:,}
 
-                                **Calculations:** {", ".join([f"{encrypted_list[i]}^{decrypt_d:,} mod {decrypt_n:,} = {ascii_values[i]}" for i in range(len(encrypted_list))])}
-                                """
+                                **Calculations:**
+                                """).strip() + "\n\n" + "\n\n".join([f"{encrypted_list[i]}^{decrypt_d:,} mod {decrypt_n:,} = {ascii_values[i]}" for i in range(len(encrypted_list))])
                             },
                             {
                                 "title": "**Step 3:** Convert ASCII to characters",

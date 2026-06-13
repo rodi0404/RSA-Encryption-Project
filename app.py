@@ -29,11 +29,20 @@ def calculatepq(bit_size):
     phi = (p - 1) * (q - 1)
     return n, phi, p, q
 
-def chooseE(phi):
-    e = 65537
-    if math.gcd(e, phi) != 1:
-        raise ValueError("e must be coprime to phi")
-    return e
+def chooseE(phi, bit_size=16):
+    # For small keys, use smaller e values
+    if bit_size == 8:
+        candidate_e_values = [3, 5, 17, 257]
+    elif bit_size == 16:
+        candidate_e_values = [3, 5, 17, 257, 65537]
+    else:  # 128-bit and above
+        candidate_e_values = [65537, 257, 17, 5, 3]
+
+    for e in candidate_e_values:
+        if e < phi and math.gcd(e, phi) == 1:
+            return e
+
+    raise ValueError(f"Could not find a suitable e for phi={phi}. Try regenerating keys.")
 
 def calculateD(e, phi):
     d = pow(e, -1, phi)
@@ -57,6 +66,34 @@ def decrypt(numberlist, d, n):
     endstring = "".join(decryptedchrlist)
     return endstring
 
+def validate_public_key(e, n):
+    """Validate if e and n can work together for RSA encryption"""
+    errors = []
+    warnings = []
+
+    # Check if values are positive integers
+    if not isinstance(e, int) or e <= 0:
+        errors.append("e must be a positive integer")
+    if not isinstance(n, int) or n <= 0:
+        errors.append("n must be a positive integer")
+
+    if errors:
+        return errors, warnings
+
+    # Check if e < n (required for RSA math)
+    if e >= n:
+        errors.append(f"e ({e:,}) must be less than n ({n:,})")
+
+    # Check if e and n are coprime (gcd(e, n) = 1)
+    if math.gcd(e, n) != 1:
+        errors.append(f"e and n must be coprime (gcd(e, n) = 1). Currently gcd({e:,}, {n:,}) = {math.gcd(e, n)}")
+
+    # Warning if n is too small for ASCII
+    if n < 256:
+        warnings.append(f"⚠️ n = {n:,} is very small. ASCII characters go up to 255, so encryption may fail or produce invalid characters.")
+
+    return errors, warnings
+
 if "keys_generated" not in st.session_state:
     st.session_state.keys_generated = False
     st.session_state.n = None
@@ -70,8 +107,158 @@ if "keys_generated" not in st.session_state:
     st.session_state.last_encrypted_message = None
     st.session_state.last_encrypted_result = None
     st.session_state.encryption_key_n = None
+    st.session_state.tutorial_step = 0
+    st.session_state.animation_step = 0
+    st.session_state.animation_start_time = None
+    st.session_state.animation_paused = False
+    st.session_state.animation_pause_time = 0
 
-tab1, tab2, tab3, tab4 = st.tabs(["🔑 Generate Keys", "🔒 Encrypt", "🔓 Decrypt", "📖Infos"])
+tab0, tab1, tab2, tab3, tab4 = st.tabs(["📚 Tutorial", "🔑 Generate Keys", "🔒 Encrypt", "🔓 Decrypt", "📖Infos"])
+
+with tab0:
+    st.header("📚 How to Use This App")
+
+    # Tutorial steps
+    tutorial_steps = [
+        {
+            "title": "Welcome to RSA Encryption",
+            "content": """
+            Welcome! This app teaches you how **RSA encryption** works step by step.
+
+            RSA is the encryption used in real-world applications like:
+            - 🔒 HTTPS websites
+            - 📧 Email encryption
+            - 💳 Digital signatures
+            - 🔐 Secure messaging apps
+
+            Let's learn how it works together!
+            """,
+            "emoji": "👋"
+        },
+        {
+            "title": "Step 1: Generate Keys",
+            "content": """
+            **What happens:** The app generates a public key (e, n) and private key (d, n).
+
+            1. Go to the "🔑 Generate Keys" tab
+            2. Choose a prime bit size (8, 16, or 128 bit)
+            3. Click "Generate Keys"
+            4. Watch the animated step-by-step process!
+
+            **Why it matters:**
+            - Public key = Share with anyone (like your email address)
+            - Private key = Keep secret! (like your password)
+            """,
+            "emoji": "🔑"
+        },
+        {
+            "title": "Step 2: Encrypt a Message",
+            "content": """
+            **What happens:** Your message gets transformed into numbers using the public key.
+
+            1. Go to the "🔒 Encrypt" tab
+            2. Type your message (e.g., "Hello")
+            3. The app encrypts it with the generated keys
+            4. You get encrypted numbers that look like gibberish!
+
+            **Optional:** Use custom public keys to test with different keys.
+            """,
+            "emoji": "🔒"
+        },
+        {
+            "title": "Step 3: Decrypt a Message",
+            "content": """
+            **What happens:** The encrypted numbers get transformed back into readable text using the private key.
+
+            1. Go to the "🔓 Decrypt" tab
+            2. Paste the encrypted numbers (the ones from encryption)
+            3. The app decrypts them with the matching private key
+            4. You get your original message back!
+
+            **Important:** You can ONLY decrypt with the matching private key. Using the wrong key gives gibberish.
+            """,
+            "emoji": "🔓"
+        },
+        {
+            "title": "Testing with Custom Keys",
+            "content": """
+            **Advanced feature:** You can test RSA with your own keys!
+
+            1. **Encrypt tab:** Check "Use custom public key" and enter e and n
+            2. **Decrypt tab:** Check "Use custom private key" and enter d and n
+
+            **Try this:**
+            - Encrypt with one public key (e₁, n)
+            - Try to decrypt with a DIFFERENT private key (d₂, n)
+            - See that it gives garbage! ✓ This proves the security works.
+
+            Only the matching private key can decrypt!
+            """,
+            "emoji": "🧪"
+        },
+        {
+            "title": "Key Insights",
+            "content": """
+            **Why RSA is secure:**
+            - ✅ Anyone can encrypt with the public key
+            - ✅ Only you can decrypt with the private key
+            - ✅ Even if someone knows e and n, they can't calculate d
+            - ✅ Breaking it would require factoring n (extremely hard!)
+
+            **Key size matters:**
+            - 8-bit: Educational only (easy to break)
+            - 16-bit: Still small (learning purposes)
+            - 128-bit: Much stronger (but still not production-grade)
+            - Real systems: 2048-4096 bit
+            """,
+            "emoji": "💡"
+        },
+        {
+            "title": "Ready to Explore!",
+            "content": """
+            You're all set! Here's what to try:
+
+            1. **Generate Keys** - Watch the math happen in real-time
+            2. **Encrypt** - Type a secret message and see it encrypted
+            3. **Decrypt** - Decrypt it back and verify it matches
+            4. **Experiment** - Try custom keys and see what breaks!
+            5. **Learn** - Check the "📖Infos" tab for deeper explanations
+
+            **Have fun exploring cryptography!** 🚀
+            """,
+            "emoji": "🚀"
+        }
+    ]
+
+    # Navigation
+    col_left, col_center, col_right = st.columns([1, 3, 1])
+
+    with col_left:
+        if st.button("← Back", use_container_width=True, disabled=st.session_state.tutorial_step == 0):
+            st.session_state.tutorial_step -= 1
+            st.rerun()
+
+    with col_right:
+        if st.button("Next →", use_container_width=True, disabled=st.session_state.tutorial_step == len(tutorial_steps) - 1):
+            st.session_state.tutorial_step += 1
+            st.rerun()
+
+    with col_center:
+        step_num = st.session_state.tutorial_step + 1
+        st.markdown(f"<p style='text-align: center;'>Step {step_num} of {len(tutorial_steps)}</p>", unsafe_allow_html=True)
+
+    # Display current step
+    st.markdown("---")
+    current_step = tutorial_steps[st.session_state.tutorial_step]
+
+    st.markdown(f"## {current_step['emoji']} {current_step['title']}")
+    st.markdown(current_step['content'])
+
+    st.markdown("---")
+
+    # Progress indicator
+    progress = st.session_state.tutorial_step / (len(tutorial_steps) - 1)
+    st.progress(progress)
 
 with tab1:
     st.header("Generate RSA Keys")
@@ -91,7 +278,7 @@ with tab1:
     if st.button("Generate Keys", key="gen_keys", use_container_width=True):
         with st.spinner("Generating keys..."):
             st.session_state.n, st.session_state.phi, st.session_state.p, st.session_state.q = calculatepq(st.session_state.bit_size)
-            st.session_state.e = chooseE(st.session_state.phi)
+            st.session_state.e = chooseE(st.session_state.phi, st.session_state.bit_size)
             st.session_state.d = calculateD(st.session_state.e, st.session_state.phi)
             st.session_state.keys_generated = True
             st.session_state.show_steps = True
@@ -105,6 +292,7 @@ with tab1:
         steps = [
             {
                 "title": "**Step 1:** Generate prime p",
+                "duration": 8,
                 "content": f"""
                 **Formula:** p = random prime between 2^({st.session_state.bit_size}-1) and 2^{st.session_state.bit_size}
 
@@ -115,6 +303,7 @@ with tab1:
             },
             {
                 "title": "**Step 2:** Generate prime q",
+                "duration": 8,
                 "content": f"""
                 **Formula:** q = random prime between 2^({st.session_state.bit_size}-1) and 2^{st.session_state.bit_size}
 
@@ -125,6 +314,7 @@ with tab1:
             },
             {
                 "title": "**Step 3:** Calculate n (modulus)",
+                "duration": 10,
                 "content": f"""
                 **Formula:** n = p × q
 
@@ -135,6 +325,7 @@ with tab1:
             },
             {
                 "title": "**Step 4:** Calculate φ(n) - Euler's Totient",
+                "duration": 12,
                 "content": f"""
                 **Formula:** φ(n) = (p - 1) × (q - 1)
 
@@ -147,6 +338,7 @@ with tab1:
             },
             {
                 "title": "**Step 5:** Choose public exponent e",
+                "duration": 20,
                 "content": f"""
                 **Formula:** e = 65537 (standard choice)
 
@@ -172,6 +364,7 @@ with tab1:
             },
             {
                 "title": "**Step 6:** Calculate private exponent d",
+                "duration": 15,
                 "content": f"""
                 **Formula:** d = e^(-1) mod φ(n) (modular multiplicative inverse)
 
@@ -188,38 +381,83 @@ with tab1:
 
         # Animation only runs if show_steps is True
         if st.session_state.show_steps:
-            animation_placeholder = st.empty()
+            # Check if we've finished all steps
+            if st.session_state.animation_step >= len(steps):
+                st.session_state.show_steps = False
+                st.session_state.animation_step = 0
+                st.rerun()
+            else:
+                # Show current step
+                current_step = steps[st.session_state.animation_step]
+                step_duration = current_step.get("duration", 5)  # Get duration from step, default to 5
 
-            # Animate each step
-            for i, step in enumerate(steps):
-                with animation_placeholder.container():
-                    st.markdown(f"### 🔐 {step['title']}")
+                st.markdown(f"### 🔐 {current_step['title']}")
+                st.markdown(current_step['content'])
+                st.progress((st.session_state.animation_step + 1) / len(steps))
+
+                # Skip, Pause/Resume buttons
+                col_skip, col_pause, col_timer = st.columns([1, 1, 3])
+
+                with col_skip:
+                    if st.button("⏭️ Skip", key=f"skip_button_{st.session_state.animation_step}", use_container_width=True):
+                        st.session_state.animation_step += 1
+                        st.session_state.animation_start_time = None
+                        st.session_state.animation_paused = False
+                        st.rerun()
+
+                with col_pause:
+                    pause_button_text = "▶️ Resume" if st.session_state.animation_paused else "⏸️ Pause"
+                    if st.button(pause_button_text, key=f"pause_button_{st.session_state.animation_step}", use_container_width=True):
+                        st.session_state.animation_paused = not st.session_state.animation_paused
+                        if st.session_state.animation_paused:
+                            st.session_state.animation_pause_time = time.time()
+                        else:
+                            # Adjust start time to account for pause duration
+                            pause_duration = time.time() - st.session_state.animation_pause_time
+                            st.session_state.animation_start_time += pause_duration
+                        st.rerun()
+
+                # Timer
+                if st.session_state.animation_start_time is None:
+                    st.session_state.animation_start_time = time.time()
+
+                elapsed = time.time() - st.session_state.animation_start_time
+                remaining = max(0, step_duration - int(elapsed))
+
+                with col_timer:
+                    if remaining > 0:
+                        progress_pct = remaining / step_duration
+                        timer_text = "⏸️ PAUSED" if st.session_state.animation_paused else f"⏱️ Next step in {remaining}s"
+                        st.progress(progress_pct, text=timer_text)
+
+                        if not st.session_state.animation_paused:
+                            time.sleep(0.1)
+                            st.rerun()
+                    else:
+                        st.session_state.animation_step += 1
+                        st.session_state.animation_start_time = None
+                        st.session_state.animation_paused = False
+                        st.rerun()
+        else:
+            # Only show keys display after animation is complete
+            st.markdown("---")
+            st.success("✅ Keys Generated Successfully!")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.info(f"**Public Key (e, n)**\n\ne = {st.session_state.e}\n\nn = {st.session_state.n}")
+            with col2:
+                st.warning(f"**Private Key (d, n)**\n\nd = {st.session_state.d}\n\nn = {st.session_state.n}")
+
+            st.caption(f"Verification: ({st.session_state.e} × {st.session_state.d}) mod {st.session_state.phi} = {(st.session_state.e * st.session_state.d) % st.session_state.phi}")
+
+            st.markdown("---")
+            st.subheader("📐 Complete Process (scroll down to see)")
+
+            # Show all steps in expandable form for review
+            for i, step in enumerate(steps, 1):
+                with st.expander(step['title']):
                     st.markdown(step['content'])
-                    st.progress((i + 1) / len(steps))
-                time.sleep(2)
-
-            animation_placeholder.empty()
-            st.session_state.show_steps = False
-
-        # Keys display - always shown when keys are generated
-        st.markdown("---")
-        st.success("✅ Keys Generated Successfully!")
-
-        col1, col2 = st.columns(2)
-        with col1:
-            st.info(f"**Public Key (e, n)**\n\ne = {st.session_state.e}\n\nn = {st.session_state.n}")
-        with col2:
-            st.warning(f"**Private Key (d, n)**\n\nd = {st.session_state.d}\n\nn = {st.session_state.n}")
-
-        st.caption(f"Verification: ({st.session_state.e} × {st.session_state.d}) mod {st.session_state.phi} = {(st.session_state.e * st.session_state.d) % st.session_state.phi}")
-
-        st.markdown("---")
-        st.subheader("📐 Complete Process (scroll down to see)")
-
-        # Show all steps in expandable form for review
-        for i, step in enumerate(steps, 1):
-            with st.expander(step['title']):
-                st.markdown(step['content'])
 
 with tab2:
     st.header("Encrypt Message")
@@ -229,19 +467,59 @@ with tab2:
     else:
         message = st.text_input("Enter message to encrypt:", placeholder="Type your message here", key="encrypt_input")
 
-        if message:
+        # Option to use custom keys
+        st.markdown("**Public Key Settings:**")
+        use_custom_keys = st.checkbox("Use custom public key (e, n)", value=False)
+
+        if use_custom_keys:
+            col_e, col_n = st.columns(2)
+            with col_e:
+                custom_e = st.number_input("Enter e:", value=st.session_state.e, step=1, key="custom_e")
+            with col_n:
+                custom_n = st.number_input("Enter n:", value=st.session_state.n, step=1, key="custom_n")
+
+            # Validate custom keys
+            errors, warnings = validate_public_key(int(custom_e), int(custom_n))
+
+            if errors:
+                for error in errors:
+                    st.error(f"❌ {error}")
+                encrypt_e = None
+                encrypt_n = None
+            else:
+                encrypt_e = int(custom_e)
+                encrypt_n = int(custom_n)
+                st.success(f"✅ Valid keys: e = {encrypt_e:,}, n = {encrypt_n:,}")
+                if warnings:
+                    for warning in warnings:
+                        st.warning(warning)
+        else:
+            encrypt_e = st.session_state.e
+            encrypt_n = st.session_state.n
+            st.caption(f"Using generated keys: e = {encrypt_e:,}, n = {encrypt_n:,}")
+
+        if message and encrypt_e is not None and encrypt_n is not None:
             # Only recalculate if message changed OR keys changed
             if (message != st.session_state.last_encrypted_message or
-                st.session_state.encryption_key_n != st.session_state.n):
-                encrypted = encrypt(message, st.session_state.e, st.session_state.n)
-                st.session_state.last_encrypted_message = message
-                st.session_state.last_encrypted_result = encrypted
-                st.session_state.encryption_key_n = st.session_state.n
+                st.session_state.encryption_key_n != encrypt_n):
+                try:
+                    encrypted = encrypt(message, encrypt_e, encrypt_n)
+                    st.session_state.last_encrypted_message = message
+                    st.session_state.last_encrypted_result = encrypted
+                    st.session_state.encryption_key_n = encrypt_n
+                except Exception as e:
+                    st.error(f"❌ Encryption failed: {str(e)}")
+                    encrypted = None
             else:
                 encrypted = st.session_state.last_encrypted_result
 
-            st.success("✅ Encrypted!")
-            st.code(str(encrypted), language="python")
+            if encrypted:
+                st.success("✅ Encrypted!")
+                st.code(str(encrypted), language="python")
+                st.write(f"**Original:** {message}")
+                st.write(f"**Encrypted:** {encrypted}")
+        elif message and (encrypt_e is None or encrypt_n is None):
+            st.error("⚠️ Invalid keys. Please check the error messages above.")
 
 with tab3:
     st.header("Decrypt Message")
@@ -251,21 +529,41 @@ with tab3:
     else:
         encrypted_input = st.text_area("Enter encrypted numbers (as a list):", placeholder="[123, 456, 789, ...]")
 
+        # Option to use custom keys
+        st.markdown("**Private Key Settings:**")
+        use_custom_private_key = st.checkbox("Use custom private key (d, n)", value=False)
+
+        if use_custom_private_key:
+            col_d, col_n = st.columns(2)
+            with col_d:
+                custom_d = st.number_input("Enter d:", value=st.session_state.d, step=1, key="custom_d")
+            with col_n:
+                custom_n = st.number_input("Enter n:", value=st.session_state.n, step=1, key="custom_n")
+            decrypt_d = int(custom_d)
+            decrypt_n = int(custom_n)
+            st.caption(f"Using custom keys: d = {decrypt_d:,}, n = {decrypt_n:,}")
+        else:
+            decrypt_d = st.session_state.d
+            decrypt_n = st.session_state.n
+            st.caption(f"Using generated keys: d = {decrypt_d:,}, n = {decrypt_n:,}")
+
         if encrypted_input:
             try:
                 # Parse the input
                 encrypted_list = eval(encrypted_input)
                 if isinstance(encrypted_list, list):
-                    decrypted = decrypt(encrypted_list, st.session_state.d, st.session_state.n)
-                    st.success("✅ Decrypted!")
-                    st.write(f"**Encrypted:**")
-                    st.code(encrypted_list, language="python")
-                    st.write(f"**Decrypted:**")
-                    st.code(decrypted, language="text")
+                    try:
+                        decrypted = decrypt(encrypted_list, decrypt_d, decrypt_n)
+                        st.success("✅ Decrypted!")
+                        st.write(f"**Decrypted:**")
+                        st.code(decrypted, language="text")
+                    except Exception as e:
+                        st.error(f"❌ Decryption failed: {str(e)}")
+                        st.info("💡 Make sure you're using the correct private key (d, n) that matches the encryption key (e, n)")
                 else:
                     st.error("❌ Input must be a list of numbers")
             except Exception as e:
-                st.error(f"❌ Error: {str(e)}")
+                st.error(f"❌ Error parsing input: {str(e)}")
                 st.info("Make sure to paste the encrypted numbers in the format: [123, 456, 789, ...]")
 
 

@@ -32,9 +32,9 @@ def calculatepq(bit_size):
 def chooseE(phi, bit_size=16):
     # For small keys, use smaller e values
     if bit_size == 8:
-        candidate_e_values = [3, 5, 17, 257]
+        candidate_e_values = [5, 17, 257]
     elif bit_size == 16:
-        candidate_e_values = [3, 5, 17, 257, 65537]
+        candidate_e_values = [17, 257, 65537]
     else:  # 128-bit and above
         candidate_e_values = [65537, 257, 17, 5, 3]
 

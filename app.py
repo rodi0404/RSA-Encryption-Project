@@ -112,6 +112,10 @@ if "keys_generated" not in st.session_state:
     st.session_state.animation_start_time = None
     st.session_state.animation_paused = False
     st.session_state.animation_pause_time = 0
+    st.session_state.encryption_animation_step = 0
+    st.session_state.encryption_animation_start_time = None
+    st.session_state.encryption_animation_paused = False
+    st.session_state.encryption_animation_pause_time = 0
 
 tab0, tab1, tab2, tab3, tab4 = st.tabs(["📚 Tutorial", "🔑 Generate Keys", "🔒 Encrypt", "🔓 Decrypt", "📖Infos"])
 
@@ -514,10 +518,126 @@ with tab2:
                 encrypted = st.session_state.last_encrypted_result
 
             if encrypted:
-                st.success("✅ Encrypted!")
-                st.code(str(encrypted), language="python")
-                st.write(f"**Original:** {message}")
-                st.write(f"**Encrypted:** {encrypted}")
+                # Create step-by-step breakdown
+                chars = list(message)
+                ascii_values = [ord(char) for char in chars]
+                ascii_display = ", ".join([f"'{char}'={ord(char)}" for char in chars])
+
+                encryption_steps = [
+                    {
+                        "title": "**Step 1:** Convert message to characters",
+                        "duration": 6,
+                        "content": f"""
+                        **Formula:** message → [char₁, char₂, ..., charₙ]
+
+                        **Original message:** "{message}"
+
+                        **Characters:** {chars}
+                        """
+                    },
+                    {
+                        "title": "**Step 2:** Convert each character to ASCII value",
+                        "duration": 8,
+                        "content": f"""
+                        **Formula:** char → ord(char)
+
+                        **Conversions:** {ascii_display}
+
+                        **ASCII values:** {ascii_values}
+                        """
+                    },
+                    {
+                        "title": "**Step 3:** Encrypt each ASCII value",
+                        "duration": 10,
+                        "content": f"""
+                        **Formula:** encrypted = ASCII^e mod n
+
+                        Where e = {encrypt_e:,}, n = {encrypt_n:,}
+
+                        **Calculations:**
+                        """ + "\n".join([f"- '{chars[i]}'({ascii_values[i]}) → {ascii_values[i]}^{encrypt_e:,} mod {encrypt_n:,} = **{encrypted[i]:,}**" for i in range(len(chars))])
+                    },
+                    {
+                        "title": "**Step 4:** Collect into encrypted list",
+                        "duration": 6,
+                        "content": f"""
+                        **Result:** All encrypted values combined into one list
+
+                        **Encrypted message:** {encrypted}
+
+                        Each number represents one character from your original message!
+                        """
+                    }
+                ]
+
+                st.markdown("---")
+                st.subheader("📐 Step-by-Step Encryption Breakdown")
+
+                # Animation system for encryption steps
+                if st.session_state.encryption_animation_step < len(encryption_steps):
+                    current_enc_step = encryption_steps[st.session_state.encryption_animation_step]
+                    step_duration = current_enc_step.get("duration", 6)
+
+                    st.markdown(f"### 🔐 {current_enc_step['title']}")
+                    st.markdown(current_enc_step['content'])
+                    st.progress((st.session_state.encryption_animation_step + 1) / len(encryption_steps))
+
+                    # Skip, Pause/Resume buttons
+                    col_skip, col_pause, col_timer = st.columns([1, 1, 3])
+
+                    with col_skip:
+                        if st.button("⏭️ Skip", key=f"enc_skip_{st.session_state.encryption_animation_step}", use_container_width=True):
+                            st.session_state.encryption_animation_step += 1
+                            st.session_state.encryption_animation_start_time = None
+                            st.session_state.encryption_animation_paused = False
+                            st.rerun()
+
+                    with col_pause:
+                        pause_button_text = "▶️ Resume" if st.session_state.encryption_animation_paused else "⏸️ Pause"
+                        if st.button(pause_button_text, key=f"enc_pause_{st.session_state.encryption_animation_step}", use_container_width=True):
+                            st.session_state.encryption_animation_paused = not st.session_state.encryption_animation_paused
+                            if st.session_state.encryption_animation_paused:
+                                st.session_state.encryption_animation_pause_time = time.time()
+                            else:
+                                pause_duration = time.time() - st.session_state.encryption_animation_pause_time
+                                st.session_state.encryption_animation_start_time += pause_duration
+                            st.rerun()
+
+                    # Timer
+                    if st.session_state.encryption_animation_start_time is None:
+                        st.session_state.encryption_animation_start_time = time.time()
+
+                    elapsed = time.time() - st.session_state.encryption_animation_start_time
+                    remaining = max(0, step_duration - int(elapsed))
+
+                    with col_timer:
+                        if remaining > 0:
+                            progress_pct = remaining / step_duration
+                            timer_text = "⏸️ PAUSED" if st.session_state.encryption_animation_paused else f"⏱️ Next step in {remaining}s"
+                            st.progress(progress_pct, text=timer_text)
+
+                            if not st.session_state.encryption_animation_paused:
+                                time.sleep(0.1)
+                                st.rerun()
+                        else:
+                            st.session_state.encryption_animation_step += 1
+                            st.session_state.encryption_animation_start_time = None
+                            st.session_state.encryption_animation_paused = False
+                            st.rerun()
+                else:
+                    # After animation completes, show final result
+                    st.markdown("---")
+                    st.success("✅ Encryption Complete!")
+                    st.write(f"**Original:** {message}")
+                    st.code(str(encrypted), language="python")
+
+                    st.markdown("---")
+                    st.subheader("📐 Complete Process (scroll down to see)")
+
+                    # Show all steps in expandable form for review
+                    for i, step in enumerate(encryption_steps, 1):
+                        with st.expander(step['title']):
+                            st.markdown(step['content'])
         elif message and (encrypt_e is None or encrypt_n is None):
             st.error("⚠️ Invalid keys. Please check the error messages above.")
 

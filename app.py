@@ -16,7 +16,7 @@ col1, col2 = st.columns([4, 1])
 with col1:
     st.title("🔐 RSA Encryption Project")
 with col2:
-    st.link_button("🔗 GitHub", "https://github.com/rodi0404/RSA-Encryption-Project", use_container_width=True)
+    st.link_button("🔗 Github", "https://github.com/rodi0404/RSA-Encryption-Project", use_container_width=True)
 
 st.caption("by Rodrigo Tomann")
 st.markdown("---")

@@ -151,7 +151,7 @@ with tab0:
 
     with col_left:
         if st.button("← Back", use_container_width=True, disabled=st.session_state.tutorial_step == 0):
-            st.session_state.tutorial_step -= 1
+            st.session_state.tutorial_step = max(0, st.session_state.tutorial_step - 1)
             st.rerun()
 
     with col_right:
@@ -161,7 +161,7 @@ with tab0:
                 # Go to Generate Keys tab
                 st.session_state.active_tab = 1
             else:
-                st.session_state.tutorial_step += 1
+                st.session_state.tutorial_step = min(len(tutorial_steps) - 1, st.session_state.tutorial_step + 1)
             st.rerun()
 
     with col_center:
@@ -174,8 +174,6 @@ with tab0:
 
     st.markdown(f"## {current_step['emoji']} {current_step['title']}")
     st.markdown(current_step['content'])
-
-    st.markdown("---")
 
     # Progress indicator
     progress = st.session_state.tutorial_step / (len(tutorial_steps) - 1)

@@ -14,6 +14,9 @@ This project is a **Streamlit-based learning tool** designed to help students an
 
 ## Features
 
+### 🌐 Bilingual (English / German)
+A flag-based language switcher lets you toggle the entire app between English and German instantly — every tab, button, label, and step-by-step explanation is translated.
+
 ### 📚 Tutorial Tab
 A guided introduction covering:
 - What RSA is and why it matters
@@ -21,6 +24,7 @@ A guided introduction covering:
 - Encryption and decryption process
 - Testing with custom keys
 - Real-world security considerations
+- A dedicated, non-mathematical "What Is Asymmetric Encryption?" page (with a diagram) reachable from the tutorial
 
 ### 🔑 Generate Keys Tab
 - Choose between 8-bit, 16-bit, or 128-bit prime numbers
@@ -107,7 +111,8 @@ Learn about:
 ```
 encryption/
 ├── app.py                 # Main Streamlit application
-├── content.py            # Educational content (tutorial, info)
+├── content.py            # Educational content (tutorial, info), English & German
+├── i18n.py               # UI text and step templates for English & German
 ├── main.py              # Original RSA implementation (reference)
 ├── requirements.txt      # Python dependencies
 └── README.md            # This file
@@ -169,9 +174,11 @@ This tool is perfect for:
 
 **Code & Algorithm Implementation**: Written by [Rodrigo Tomann](https://github.com/rodi0404)
 
-The core code for calculating keys, encrypting, decrypting, and all cryptographic functions was written from scratch. **AI was mainly used for the text/copywriting and educational content** of the application (tutorial explanations, info sections, step descriptions).
+The core code for calculating keys, encrypting, decrypting, and all cryptographic functions was written from scratch. **AI was mainly used for the text/copywriting and educational content** of the application (tutorial explanations, info sections, step descriptions). **The German translations were also done by AI.**
 
 **This project was NOT vibecoded.** While the colorful design with emojis might suggest otherwise, the cryptographic implementation and application logic are handwritten code, not AI-generated.
+
+Comments for better understanding of the code are also 95% AI generated.
 
 ## Acknowledgments
 

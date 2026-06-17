@@ -2,8 +2,8 @@ import streamlit as st
 from sympy import randprime
 import math
 import time
-import textwrap
 from content import get_tutorial_steps, get_info_content, get_asymmetric_explanation_intro, get_asymmetric_explanation_outro
+from i18n import LANGUAGES, UI_TEXT, KEYGEN_STEP_TEMPLATES, ENCRYPT_STEP_TEMPLATES, DECRYPT_STEP_TEMPLATES
 
 st.set_page_config(page_title="RSA Encryption Tool", layout="centered", initial_sidebar_state="expanded")
 
@@ -11,16 +11,31 @@ st.markdown("""
     <style>
     .main { max-width: 800px; }
     [data-testid="stHeaderActionElements"] { display: none; }
+    [data-testid="stHeading"] h1 { white-space: nowrap !important; font-size: clamp(1.1rem, 3.5vw, 2.25rem) !important; }
     </style>
 """, unsafe_allow_html=True)
 
-col1, col2 = st.columns([4, 1])
-with col1:
-    st.title("🔐 Learning RSA Encryption")
-with col2:
-    st.link_button("🔗 Github", "https://github.com/rodi0404/RSA-Encryption-Project", use_container_width=True)
+if "lang" not in st.session_state:
+    st.session_state.lang = "en"
 
-st.caption("by Rodrigo Tomann")
+st.segmented_control(
+    "Language",
+    options=["en", "de"],
+    format_func=lambda x: LANGUAGES[x],
+    key="lang",
+    required=True,
+    label_visibility="collapsed",
+)
+
+T = UI_TEXT[st.session_state.lang]
+
+col1, col2 = st.columns([5, 1])
+with col1:
+    st.title(T["app_title"])
+with col2:
+    st.link_button(T["github_button"], "https://github.com/rodi0404/RSA-Encryption-Project", use_container_width=True)
+
+st.caption(T["caption"])
 st.markdown("---")
 
 
@@ -69,31 +84,31 @@ def decrypt(numberlist, d, n):
     endstring = "".join(decryptedchrlist)
     return endstring
 
-def validate_public_key(e, n):
+def validate_public_key(e, n, T):
     """Validate if e and n can work together for RSA encryption"""
     errors = []
     warnings = []
 
     # Check if values are positive integers
     if not isinstance(e, int) or e <= 0:
-        errors.append("e must be a positive integer")
+        errors.append(T["err_e_not_positive"])
     if not isinstance(n, int) or n <= 0:
-        errors.append("n must be a positive integer")
+        errors.append(T["err_n_not_positive"])
 
     if errors:
         return errors, warnings
 
     # Check if e < n (required for RSA math)
     if e >= n:
-        errors.append(f"e ({e:,}) must be less than n ({n:,})")
+        errors.append(T["err_e_too_large"].format(e=f"{e:,}", n=f"{n:,}"))
 
     # Check if e and n are coprime (gcd(e, n) = 1)
     if math.gcd(e, n) != 1:
-        errors.append(f"e and n must be coprime (gcd(e, n) = 1). Currently gcd({e:,}, {n:,}) = {math.gcd(e, n)}")
+        errors.append(T["err_not_coprime"].format(e=f"{e:,}", n=f"{n:,}", gcd=math.gcd(e, n)))
 
     # Warning if n is too small for ASCII
     if n < 256:
-        warnings.append(f"⚠️ n = {n:,} is very small. ASCII characters go up to 255, so encryption may fail or produce invalid characters.")
+        warnings.append(T["warn_n_small"].format(n=f"{n:,}"))
 
     return errors, warnings
 
@@ -126,7 +141,7 @@ if "keys_generated" not in st.session_state:
     st.session_state.active_tab = 0
     st.session_state.show_asymmetric_explanation = False
 
-tabs = st.tabs(["📚 Tutorial", "🔑 Generate Keys", "🔒 Encrypt", "🔓 Decrypt", "📖Infos"])
+tabs = st.tabs([T["tab_tutorial"], T["tab_generate"], T["tab_encrypt"], T["tab_decrypt"], T["tab_infos"]])
 tab0, tab1, tab2, tab3, tab4 = tabs
 
 # If active_tab is set to 1, use JavaScript to click the Generate Keys tab
@@ -143,33 +158,33 @@ if st.session_state.active_tab == 1:
     """, height=1)
 
 with tab0:
-    st.header("📚 How to Use This App")
+    st.header(T["tutorial_header"])
 
     if st.session_state.show_asymmetric_explanation:
-        if st.button("← Back to Tutorial", use_container_width=True):
+        if st.button(T["back_to_tutorial"], use_container_width=True):
             st.session_state.show_asymmetric_explanation = False
             st.rerun()
 
         st.markdown("---")
-        st.markdown("## 🔐 What Is Asymmetric Encryption?")
-        st.markdown(get_asymmetric_explanation_intro())
-        st.image("image.png", caption="Alice encrypts with Bob's public key, only Bob's private key can decrypt it")
-        st.markdown(get_asymmetric_explanation_outro())
+        st.markdown(f"## {T['asymmetric_header']}")
+        st.markdown(get_asymmetric_explanation_intro(st.session_state.lang))
+        st.image("image.png", caption=T["asymmetric_image_caption"])
+        st.markdown(get_asymmetric_explanation_outro(st.session_state.lang))
     else:
         # Load tutorial steps from content module
-        tutorial_steps = get_tutorial_steps()
+        tutorial_steps = get_tutorial_steps(st.session_state.lang)
 
         # Navigation
         col_left, col_center, col_right = st.columns([1, 3, 1])
 
         with col_left:
-            if st.button("← Back", use_container_width=True, disabled=st.session_state.tutorial_step == 0):
+            if st.button(T["back"], use_container_width=True, disabled=st.session_state.tutorial_step == 0):
                 st.session_state.tutorial_step = max(0, st.session_state.tutorial_step - 1)
                 st.rerun()
 
         with col_right:
             is_last_page = st.session_state.tutorial_step == len(tutorial_steps) - 1
-            if st.button("Next →", use_container_width=True, disabled=False):
+            if st.button(T["next"], use_container_width=True, disabled=False):
                 if is_last_page:
                     # Go to Generate Keys tab
                     st.session_state.active_tab = 1
@@ -179,7 +194,7 @@ with tab0:
 
         with col_center:
             step_num = st.session_state.tutorial_step + 1
-            st.markdown(f"<p style='text-align: center;'>Page {step_num} of {len(tutorial_steps)}</p>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align: center;'>{T['page_of'].format(current=step_num, total=len(tutorial_steps))}</p>", unsafe_allow_html=True)
 
         # Display current step
         st.markdown("---")
@@ -189,7 +204,7 @@ with tab0:
         st.markdown(current_step['content'])
 
         if st.session_state.tutorial_step == 1:
-            if st.button("🔐 What is asymmetric encryption?", use_container_width=True):
+            if st.button(T["asymmetric_btn"], use_container_width=True):
                 st.session_state.show_asymmetric_explanation = True
                 st.rerun()
 
@@ -198,22 +213,22 @@ with tab0:
         st.progress(progress)
 
 with tab1:
-    st.header("Generate RSA Keys")
-    st.write("Select key size and generate your public and private keys")
+    st.header(T["gen_header"])
+    st.write(T["gen_subtitle"])
 
     def reset_steps():
         st.session_state.show_steps = False
 
     st.session_state.bit_size = st.radio(
-        "Choose prime bit size:",
+        T["gen_radio_label"],
         options=[8, 16, 128],
-        format_func=lambda x: f"{x}-Bit Primes" if x != 128 else "128-Bit Primes",
+        format_func=lambda x: T["gen_bit_format"].format(bits=x),
         horizontal=True,
         on_change=reset_steps
     )
 
-    if st.button("Generate Keys", key="gen_keys", use_container_width=True):
-        with st.spinner("Generating keys..."):
+    if st.button(T["gen_button"], key="gen_keys", use_container_width=True):
+        with st.spinner(T["gen_spinner"]):
             st.session_state.n, st.session_state.phi, st.session_state.p, st.session_state.q = calculatepq(st.session_state.bit_size)
             st.session_state.e = chooseE(st.session_state.phi, st.session_state.bit_size)
             st.session_state.d = calculateD(st.session_state.e, st.session_state.phi)
@@ -225,95 +240,50 @@ with tab1:
             st.session_state.encryption_key_n = None
 
     if st.session_state.keys_generated:
+        bit_size = st.session_state.bit_size
+        p, q, n, phi, e, d = (
+            st.session_state.p, st.session_state.q, st.session_state.n,
+            st.session_state.phi, st.session_state.e, st.session_state.d,
+        )
+        templates = KEYGEN_STEP_TEMPLATES[st.session_state.lang]
+        low = f"{2**(bit_size-1):,}"
+        high = f"{2**bit_size:,}"
+
         # Step definitions (reused for animation and review)
         steps = [
             {
-                "title": "**Step 1:** Generate prime p",
+                "title": templates[0]["title"],
                 "duration": 8,
-                "content": f"""
-                **Formula:** p = random prime between 2^({st.session_state.bit_size}-1) and 2^{st.session_state.bit_size}
-
-                **Range:** {2**(st.session_state.bit_size-1):,} to {2**st.session_state.bit_size:,}
-
-                **Result:** p = **{st.session_state.p:,}**
-                """
+                "content": templates[0]["content"].format(bits=bit_size, low=low, high=high, p=f"{p:,}"),
             },
             {
-                "title": "**Step 2:** Generate prime q",
+                "title": templates[1]["title"],
                 "duration": 8,
-                "content": f"""
-                **Formula:** q = random prime between 2^({st.session_state.bit_size}-1) and 2^{st.session_state.bit_size}
-
-                **Range:** {2**(st.session_state.bit_size-1):,} to {2**st.session_state.bit_size:,}
-
-                **Result:** q = **{st.session_state.q:,}**
-                """
+                "content": templates[1]["content"].format(bits=bit_size, low=low, high=high, q=f"{q:,}"),
             },
             {
-                "title": "**Step 3:** Calculate n (modulus)",
+                "title": templates[2]["title"],
                 "duration": 10,
-                "content": f"""
-                **Formula:** n = p × q
-
-                **Calculation:** n = {st.session_state.p:,} × {st.session_state.q:,}
-
-                **Result:** n = **{st.session_state.n:,}**
-                """
+                "content": templates[2]["content"].format(p=f"{p:,}", q=f"{q:,}", n=f"{n:,}"),
             },
             {
-                "title": "**Step 4:** Calculate φ(n) - Euler's Totient",
+                "title": templates[3]["title"],
                 "duration": 12,
-                "content": f"""
-                **Formula:** φ(n) = (p - 1) × (q - 1)
-
-                **Calculation:** φ(n) = ({st.session_state.p:,} - 1) × ({st.session_state.q:,} - 1)
-
-                **Calculation:** φ(n) = {st.session_state.p - 1:,} × {st.session_state.q - 1:,}
-
-                **Result:** φ(n) = **{st.session_state.phi:,}**
-                """
+                "content": templates[3]["content"].format(
+                    p=f"{p:,}", q=f"{q:,}", phi=f"{phi:,}",
+                    p_minus_1=f"{p - 1:,}", q_minus_1=f"{q - 1:,}",
+                ),
             },
             {
-                "title": "**Step 5:** Choose public exponent e",
+                "title": templates[4]["title"],
                 "duration": 20,
-                "content": f"""
-                **Formula:** e = 65537 (standard choice)
-
-                **What is GCD?**
-                GCD (Greatest Common Divisor) is the largest number that divides both numbers evenly with no remainder.
-
-                Example: gcd(12, 8) = 4 (since 4 divides both 12 and 8)
-
-                **Why must gcd(e, φ(n)) = 1?**
-                For RSA to work, e and φ(n) must be coprime (only share 1 as a common divisor). If they share other factors, we **can't** calculate the **private key d**.
-
-                **Why use 65537?**
-                - It's prime (only divisible by 1 and itself)
-                - It's small (speeds up encryption)
-                - It's almost always coprime with φ(n) (very rare exceptions)
-                - It's the standard in cryptography (used by OpenSSL, TLS, etc.)
-                - It's 10000000000000001 in binary
-
-                **Verification:** gcd({st.session_state.e:,}, {st.session_state.phi:,}) = {math.gcd(st.session_state.e, st.session_state.phi)}
-
-                **Result:** e = **{st.session_state.e:,}** ✅
-                """
+                "content": templates[4]["content"].format(e=f"{e:,}", phi=f"{phi:,}", gcd=math.gcd(e, phi)),
             },
             {
-                "title": "**Step 6:** Calculate private exponent d",
+                "title": templates[5]["title"],
                 "duration": 15,
-                "content": f"""
-                **Formula:** d = e^(-1) mod φ(n) (modular multiplicative inverse)
-
-                **Meaning:** Find d such that (e × d) mod φ(n) = 1
-
-                **Calculation:** ({st.session_state.e:,} × d) mod {st.session_state.phi:,} = 1
-
-                **Result:** d = **{st.session_state.d:,}**
-
-                **Verification:** ({st.session_state.e:,} × {st.session_state.d:,}) mod {st.session_state.phi:,} = {(st.session_state.e * st.session_state.d) % st.session_state.phi}
-                """
-            }
+                "content": templates[5]["content"].format(e=f"{e:,}", phi=f"{phi:,}", d=f"{d:,}", verify=(e * d) % phi),
+            },
         ]
 
         # Animation only runs if show_steps is True
@@ -336,14 +306,14 @@ with tab1:
                 col_skip, col_pause, col_timer = st.columns([1, 1, 3])
 
                 with col_skip:
-                    if st.button("⏭️ Skip", key=f"skip_button_{st.session_state.animation_step}", use_container_width=True):
+                    if st.button(T["skip"], key=f"skip_button_{st.session_state.animation_step}", use_container_width=True):
                         st.session_state.animation_step += 1
                         st.session_state.animation_start_time = None
                         st.session_state.animation_paused = False
                         st.rerun()
 
                 with col_pause:
-                    pause_button_text = "▶️ Resume" if st.session_state.animation_paused else "⏸️ Pause"
+                    pause_button_text = T["resume"] if st.session_state.animation_paused else T["pause"]
                     if st.button(pause_button_text, key=f"pause_button_{st.session_state.animation_step}", use_container_width=True):
                         st.session_state.animation_paused = not st.session_state.animation_paused
                         if st.session_state.animation_paused:
@@ -364,7 +334,7 @@ with tab1:
                 with col_timer:
                     if remaining > 0:
                         progress_pct = remaining / step_duration
-                        timer_text = "⏸️ PAUSED" if st.session_state.animation_paused else f"⏱️ Next step in {remaining}s"
+                        timer_text = T["paused"] if st.session_state.animation_paused else T["next_step_in"].format(seconds=remaining)
                         st.progress(progress_pct, text=timer_text)
 
                         if not st.session_state.animation_paused:
@@ -378,18 +348,18 @@ with tab1:
         else:
             # Only show keys display after animation is complete
             st.markdown("---")
-            st.success("✅ Keys Generated Successfully!")
+            st.success(T["keys_success"])
 
             col1, col2 = st.columns(2)
             with col1:
-                st.info(f"**Public Key (e, n)**\n\ne = {st.session_state.e}\n\nn = {st.session_state.n}")
+                st.info(T["public_key_box"].format(e=e, n=n))
             with col2:
-                st.warning(f"**Private Key (d, n)**\n\nd = {st.session_state.d}\n\nn = {st.session_state.n}")
+                st.warning(T["private_key_box"].format(d=d, n=n))
 
-            st.caption(f"Verification: ({st.session_state.e} × {st.session_state.d}) mod {st.session_state.phi} = {(st.session_state.e * st.session_state.d) % st.session_state.phi}")
+            st.caption(T["verification_caption"].format(e=e, d=d, phi=phi, result=(e * d) % phi))
 
             st.markdown("---")
-            st.subheader("📐 Complete Process (scroll down to see)")
+            st.subheader(T["complete_process"])
 
             # Show all steps in expandable form for review
             for i, step in enumerate(steps, 1):
@@ -397,26 +367,26 @@ with tab1:
                     st.markdown(step['content'])
 
 with tab2:
-    st.header("Encrypt Message")
+    st.header(T["encrypt_header"])
 
     if not st.session_state.keys_generated:
-        st.warning("⚠️ Generate keys first in the 'Generate Keys' tab")
+        st.warning(T["need_keys_warning"])
     else:
-        message = st.text_input("Enter message to encrypt:", placeholder="Type your message here", key="encrypt_input")
+        message = st.text_input(T["encrypt_input_label"], placeholder=T["encrypt_input_placeholder"], key="encrypt_input")
 
         # Option to use custom keys
-        st.markdown("**Public Key Settings:**")
-        use_custom_keys = st.checkbox("Use custom public key (e, n)", value=False)
+        st.markdown(T["public_key_settings"])
+        use_custom_keys = st.checkbox(T["use_custom_public_key"], value=False)
 
         if use_custom_keys:
             col_e, col_n = st.columns(2)
             with col_e:
-                custom_e = st.number_input("Enter e:", value=st.session_state.e, step=1, key="custom_e")
+                custom_e = st.number_input(T["enter_e"], value=st.session_state.e, step=1, key="custom_e")
             with col_n:
-                custom_n = st.number_input("Enter n:", value=st.session_state.n, step=1, key="custom_n")
+                custom_n = st.number_input(T["enter_n"], value=st.session_state.n, step=1, key="custom_n")
 
             # Validate custom keys
-            errors, warnings = validate_public_key(int(custom_e), int(custom_n))
+            errors, warnings = validate_public_key(int(custom_e), int(custom_n), T)
 
             if errors:
                 for error in errors:
@@ -426,14 +396,14 @@ with tab2:
             else:
                 encrypt_e = int(custom_e)
                 encrypt_n = int(custom_n)
-                st.success(f"✅ Valid keys: e = {encrypt_e:,}, n = {encrypt_n:,}")
+                st.success(T["valid_keys"].format(e=f"{encrypt_e:,}", n=f"{encrypt_n:,}"))
                 if warnings:
                     for warning in warnings:
                         st.warning(warning)
         else:
             encrypt_e = st.session_state.e
             encrypt_n = st.session_state.n
-            st.caption(f"Using generated keys: e = {encrypt_e:,}, n = {encrypt_n:,}")
+            st.caption(T["using_generated_keys"].format(e=f"{encrypt_e:,}", n=f"{encrypt_n:,}"))
 
         if message and encrypt_e is not None and encrypt_n is not None:
             # Only recalculate if message changed OR keys changed
@@ -444,8 +414,8 @@ with tab2:
                     st.session_state.last_encrypted_message = message
                     st.session_state.last_encrypted_result = encrypted
                     st.session_state.encryption_key_n = encrypt_n
-                except Exception as e:
-                    st.error(f"❌ Encryption failed: {str(e)}")
+                except Exception as ex:
+                    st.error(T["encryption_failed"].format(error=str(ex)))
                     encrypted = None
             else:
                 encrypted = st.session_state.last_encrypted_result
@@ -455,60 +425,36 @@ with tab2:
                 chars = list(message)
                 ascii_values = [ord(char) for char in chars]
                 ascii_display = ", ".join([f"'{char}'={ord(char)}" for char in chars])
+                calculations = "\n\n".join([f"'{chars[i]}'({ascii_values[i]}) → {ascii_values[i]}^{encrypt_e:,} mod {encrypt_n:,} = {encrypted[i]:,}" for i in range(len(chars))])
 
+                enc_templates = ENCRYPT_STEP_TEMPLATES[st.session_state.lang]
                 encryption_steps = [
                     {
-                        "title": "**Step 1:** Convert message to characters",
+                        "title": enc_templates[0]["title"],
                         "duration": 6,
-                        "content": f"""
-                        **Formula:** message → [char₁, char₂, ..., charₙ]
-
-                        **Original message:** "{message}"
-
-                        **Characters:** {chars}
-                        """
+                        "content": enc_templates[0]["content"].format(message=message, chars=chars),
                     },
                     {
-                        "title": "**Step 2:** Convert each character to ASCII value",
+                        "title": enc_templates[1]["title"],
                         "duration": 8,
-                        "content": f"""
-                        **Formula:** char → ord(char)
-
-                        **Conversions:** {ascii_display}
-
-                        **ASCII values:** {ascii_values}
-
-                        📚 [Learn more about ASCII codes](https://www.ascii-code.com)
-                        """
+                        "content": enc_templates[1]["content"].format(ascii_display=ascii_display, ascii_values=ascii_values),
                     },
                     {
-                        "title": "**Step 3:** Encrypt each ASCII value",
+                        "title": enc_templates[2]["title"],
                         "duration": 10,
-                        "content": textwrap.dedent(f"""
-                        **Formula:** encrypted = ASCII^e mod n
-
-                        Where e = {encrypt_e:,}, n = {encrypt_n:,}
-
-                        **Calculations:**
-                        """).strip() + "\n\n" + "\n\n".join([f"'{chars[i]}'({ascii_values[i]}) → {ascii_values[i]}^{encrypt_e:,} mod {encrypt_n:,} = {encrypted[i]:,}" for i in range(len(chars))])
+                        "content": enc_templates[2]["content"].format(e=f"{encrypt_e:,}", n=f"{encrypt_n:,}", calculations=calculations),
                     },
                     {
-                        "title": "**Step 4:** Collect into encrypted list",
+                        "title": enc_templates[3]["title"],
                         "duration": 6,
-                        "content": f"""
-                        **Result:** All encrypted values combined into one list
-
-                        **Encrypted message:** {encrypted}
-
-                        Each number represents one character from your original message!
-                        """
-                    }
+                        "content": enc_templates[3]["content"].format(encrypted=encrypted),
+                    },
                 ]
 
                 # Animation system for encryption steps
                 if st.session_state.encryption_animation_step < len(encryption_steps):
                     st.markdown("---")
-                    st.subheader("📐 Step-by-Step Encryption Breakdown")
+                    st.subheader(T["encryption_breakdown"])
                     current_enc_step = encryption_steps[st.session_state.encryption_animation_step]
                     step_duration = current_enc_step.get("duration", 6)
 
@@ -520,14 +466,14 @@ with tab2:
                     col_skip, col_pause, col_timer = st.columns([1, 1, 3])
 
                     with col_skip:
-                        if st.button("⏭️ Skip", key=f"enc_skip_{st.session_state.encryption_animation_step}", use_container_width=True):
+                        if st.button(T["skip"], key=f"enc_skip_{st.session_state.encryption_animation_step}", use_container_width=True):
                             st.session_state.encryption_animation_step += 1
                             st.session_state.encryption_animation_start_time = None
                             st.session_state.encryption_animation_paused = False
                             st.rerun()
 
                     with col_pause:
-                        pause_button_text = "▶️ Resume" if st.session_state.encryption_animation_paused else "⏸️ Pause"
+                        pause_button_text = T["resume"] if st.session_state.encryption_animation_paused else T["pause"]
                         if st.button(pause_button_text, key=f"enc_pause_{st.session_state.encryption_animation_step}", use_container_width=True):
                             st.session_state.encryption_animation_paused = not st.session_state.encryption_animation_paused
                             if st.session_state.encryption_animation_paused:
@@ -547,7 +493,7 @@ with tab2:
                     with col_timer:
                         if remaining > 0:
                             progress_pct = remaining / step_duration
-                            timer_text = "⏸️ PAUSED" if st.session_state.encryption_animation_paused else f"⏱️ Next step in {remaining}s"
+                            timer_text = T["paused"] if st.session_state.encryption_animation_paused else T["next_step_in"].format(seconds=remaining)
                             st.progress(progress_pct, text=timer_text)
 
                             if not st.session_state.encryption_animation_paused:
@@ -561,45 +507,45 @@ with tab2:
                 else:
                     # After animation completes, show final result
                     st.markdown("---")
-                    st.success("✅ Encryption Complete!")
-                    st.write(f"**Original:** {message}")
+                    st.success(T["encryption_complete"])
+                    st.write(T["original_label"].format(value=message))
                     st.code(str(encrypted), language="python")
 
                     st.markdown("---")
-                    st.subheader("📐 Complete Process (scroll down to see)")
+                    st.subheader(T["complete_process"])
 
                     # Show all steps in expandable form for review
                     for i, step in enumerate(encryption_steps, 1):
                         with st.expander(step['title']):
                             st.markdown(step['content'])
         elif message and (encrypt_e is None or encrypt_n is None):
-            st.error("⚠️ Invalid keys. Please check the error messages above.")
+            st.error(T["invalid_keys_error"])
 
 with tab3:
-    st.header("Decrypt Message")
+    st.header(T["decrypt_header"])
 
     if not st.session_state.keys_generated:
-        st.warning("⚠️ Generate keys first in the 'Generate Keys' tab")
+        st.warning(T["need_keys_warning"])
     else:
-        encrypted_input = st.text_area("Enter encrypted numbers (as a list):", placeholder="[123, 456, 789, ...]")
+        encrypted_input = st.text_area(T["decrypt_input_label"], placeholder=T["decrypt_input_placeholder"])
 
         # Option to use custom keys
-        st.markdown("**Private Key Settings:**")
-        use_custom_private_key = st.checkbox("Use custom private key (d, n)", value=False)
+        st.markdown(T["private_key_settings"])
+        use_custom_private_key = st.checkbox(T["use_custom_private_key"], value=False)
 
         if use_custom_private_key:
             col_d, col_n = st.columns(2)
             with col_d:
-                custom_d = st.number_input("Enter d:", value=st.session_state.d, step=1, key="custom_d")
+                custom_d = st.number_input(T["enter_d"], value=st.session_state.d, step=1, key="custom_d")
             with col_n:
-                custom_n = st.number_input("Enter n:", value=st.session_state.n, step=1, key="custom_n")
+                custom_n = st.number_input(T["enter_n"], value=st.session_state.n, step=1, key="custom_n")
             decrypt_d = int(custom_d)
             decrypt_n = int(custom_n)
-            st.caption(f"Using custom keys: d = {decrypt_d:,}, n = {decrypt_n:,}")
+            st.caption(T["using_custom_keys_dn"].format(d=f"{decrypt_d:,}", n=f"{decrypt_n:,}"))
         else:
             decrypt_d = st.session_state.d
             decrypt_n = st.session_state.n
-            st.caption(f"Using generated keys: d = {decrypt_d:,}, n = {decrypt_n:,}")
+            st.caption(T["using_generated_keys_dn"].format(d=f"{decrypt_d:,}", n=f"{decrypt_n:,}"))
 
         if encrypted_input:
             try:
@@ -612,55 +558,37 @@ with tab3:
                         # Create step-by-step breakdown
                         ascii_values = [pow(num, decrypt_d, decrypt_n) for num in encrypted_list]
                         chars = [chr(val) for val in ascii_values]
-                        ascii_display = ", ".join([f"{encrypted_list[i]}→{ascii_values[i]}" for i in range(len(encrypted_list))])
+                        calculations = "\n\n".join([f"{encrypted_list[i]}^{decrypt_d:,} mod {decrypt_n:,} = {ascii_values[i]}" for i in range(len(encrypted_list))])
+                        conversions = ", ".join([f"{ascii_values[i]}→'{chars[i]}'" for i in range(len(ascii_values))])
 
+                        dec_templates = DECRYPT_STEP_TEMPLATES[st.session_state.lang]
                         decryption_steps = [
                             {
-                                "title": "**Step 1:** Encrypted list received",
+                                "title": dec_templates[0]["title"],
                                 "duration": 5,
-                                "content": f"""
-                                **Encrypted numbers:** {encrypted_list}
-
-                                Each number represents one encrypted character.
-                                """
+                                "content": dec_templates[0]["content"].format(encrypted_list=encrypted_list),
                             },
                             {
-                                "title": "**Step 2:** Decrypt each number",
+                                "title": dec_templates[1]["title"],
                                 "duration": 10,
-                                "content": textwrap.dedent(f"""
-                                **Formula:** ASCII = encrypted^d mod n
-
-                                Where d = {decrypt_d:,}, n = {decrypt_n:,}
-
-                                **Calculations:**
-                                """).strip() + "\n\n" + "\n\n".join([f"{encrypted_list[i]}^{decrypt_d:,} mod {decrypt_n:,} = {ascii_values[i]}" for i in range(len(encrypted_list))])
+                                "content": dec_templates[1]["content"].format(d=f"{decrypt_d:,}", n=f"{decrypt_n:,}", calculations=calculations),
                             },
                             {
-                                "title": "**Step 3:** Convert ASCII to characters",
+                                "title": dec_templates[2]["title"],
                                 "duration": 8,
-                                "content": f"""
-                                **Formula:** ASCII → chr(ASCII)
-
-                                **Conversions:** {", ".join([f"{ascii_values[i]}→'{chars[i]}'" for i in range(len(ascii_values))])}
-
-                                📚 [Learn more about ASCII codes](https://www.ascii-code.com)
-                                """
+                                "content": dec_templates[2]["content"].format(conversions=conversions),
                             },
                             {
-                                "title": "**Step 4:** Combine into message",
+                                "title": dec_templates[3]["title"],
                                 "duration": 6,
-                                "content": f"""
-                                **Result:** All characters combined into final message
-
-                                **Decrypted message:** "{decrypted}"
-                                """
-                            }
+                                "content": dec_templates[3]["content"].format(decrypted=decrypted),
+                            },
                         ]
 
                         # Animation system for decryption steps
                         if st.session_state.decryption_animation_step < len(decryption_steps):
                             st.markdown("---")
-                            st.subheader("📐 Step-by-Step Decryption Breakdown")
+                            st.subheader(T["decryption_breakdown"])
 
                             current_dec_step = decryption_steps[st.session_state.decryption_animation_step]
                             step_duration = current_dec_step.get("duration", 6)
@@ -673,14 +601,14 @@ with tab3:
                             col_skip, col_pause, col_timer = st.columns([1, 1, 3])
 
                             with col_skip:
-                                if st.button("⏭️ Skip", key=f"dec_skip_{st.session_state.decryption_animation_step}", use_container_width=True):
+                                if st.button(T["skip"], key=f"dec_skip_{st.session_state.decryption_animation_step}", use_container_width=True):
                                     st.session_state.decryption_animation_step += 1
                                     st.session_state.decryption_animation_start_time = None
                                     st.session_state.decryption_animation_paused = False
                                     st.rerun()
 
                             with col_pause:
-                                pause_button_text = "▶️ Resume" if st.session_state.decryption_animation_paused else "⏸️ Pause"
+                                pause_button_text = T["resume"] if st.session_state.decryption_animation_paused else T["pause"]
                                 if st.button(pause_button_text, key=f"dec_pause_{st.session_state.decryption_animation_step}", use_container_width=True):
                                     st.session_state.decryption_animation_paused = not st.session_state.decryption_animation_paused
                                     if st.session_state.decryption_animation_paused:
@@ -700,7 +628,7 @@ with tab3:
                             with col_timer:
                                 if remaining > 0:
                                     progress_pct = remaining / step_duration
-                                    timer_text = "⏸️ PAUSED" if st.session_state.decryption_animation_paused else f"⏱️ Next step in {remaining}s"
+                                    timer_text = T["paused"] if st.session_state.decryption_animation_paused else T["next_step_in"].format(seconds=remaining)
                                     st.progress(progress_pct, text=timer_text)
 
                                     if not st.session_state.decryption_animation_paused:
@@ -714,44 +642,44 @@ with tab3:
                         else:
                             # After animation completes, show final result
                             st.markdown("---")
-                            st.success("✅ Decryption Complete!")
-                            st.write(f"**Original:** {encrypted_list}")
+                            st.success(T["decryption_complete"])
+                            st.write(T["original_label"].format(value=encrypted_list))
                             st.code(decrypted, language="text")
 
                             st.markdown("---")
-                            st.subheader("📐 Complete Process (scroll down to see)")
+                            st.subheader(T["complete_process"])
 
                             # Show all steps in expandable form for review
                             for i, step in enumerate(decryption_steps, 1):
                                 with st.expander(step['title']):
                                     st.markdown(step['content'])
 
-                    except Exception as e:
-                        st.error(f"❌ Decryption failed: {str(e)}")
-                        st.info("💡 Make sure you're using the correct private key (d, n) that matches the encryption key (e, n)")
+                    except Exception as ex:
+                        st.error(T["decryption_failed"].format(error=str(ex)))
+                        st.info(T["decryption_failed_hint"])
                 else:
-                    st.error("❌ Input must be a list of numbers")
-            except Exception as e:
-                st.error(f"❌ Error parsing input: {str(e)}")
-                st.info("Make sure to paste the encrypted numbers in the format: [123, 456, 789, ...]")
+                    st.error(T["input_must_be_list"])
+            except Exception as ex:
+                st.error(T["parse_error"].format(error=str(ex)))
+                st.info(T["parse_error_hint"])
 
 
 with tab4:
-    st.header("How RSA Works")
+    st.header(T["info_header"])
 
-    info_content = get_info_content()
+    info_content = get_info_content(st.session_state.lang)
 
-    st.subheader("🔑 The Basics")
+    st.subheader(T["info_basics_title"])
     st.info(info_content["basics"])
 
-    st.subheader("📐 How It Works Mathematically")
+    st.subheader(T["info_math_title"])
     st.markdown(info_content["mathematics"])
 
-    st.subheader("⚠️ Security Issue: Deterministic Encryption")
+    st.subheader(T["info_deterministic_title"])
     st.warning(info_content["deterministic_issue"])
 
-    st.subheader("🔐 How Real Systems Fix This: Hybrid Encryption")
+    st.subheader(T["info_hybrid_title"])
     st.success(info_content["hybrid_solution"])
 
-    st.subheader("🛡️ Real-World Security Enhancements")
+    st.subheader(T["info_enhancements_title"])
     st.markdown(info_content["enhancements"])

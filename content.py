@@ -3,8 +3,137 @@ Content strings and data structures for the RSA Encryption Tool.
 This file contains all the tutorial steps, info content, and educational text.
 """
 
-def get_tutorial_steps():
+def get_tutorial_steps(lang="en"):
     """Returns the tutorial steps for the "How to Use This App" section."""
+    if lang == "de":
+        return [
+            {
+                "title": "Willkommen bei RSA-Verschlüsselung",
+                "content": """
+                Willkommen! Diese App zeigt dir Schritt für Schritt, wie **RSA-Verschlüsselung** funktioniert.
+
+                RSA wird in echten Anwendungen verwendet, wie zum Beispiel:
+                - 🔒 HTTPS-Webseiten
+                - 📧 E-Mail-Verschlüsselung
+                - 💳 Digitale Signaturen
+                - 🔐 Sichere Messaging-Apps
+
+                Lass uns gemeinsam lernen, wie es funktioniert!
+                """,
+                "emoji": "👋"
+            },
+            {
+                "title": "Bevor du startest",
+                "content": """
+                **Diese App setzt voraus, dass du die Grundlagen der asymmetrischen Verschlüsselung verstehst:**
+
+                - ✅ Was öffentliche Schlüssel sind (können mit jedem geteilt werden)
+                - ✅ Was private Schlüssel sind (müssen geheim bleiben)
+                - ✅ Wie öffentliche Schlüssel Nachrichten verschlüsseln
+                - ✅ Wie private Schlüssel Nachrichten entschlüsseln
+                - ✅ Warum man mit dem falschen Schlüssel nicht entschlüsseln kann
+
+                **Falls dir diese Konzepte neu sind,** hilft es, vorher ein grundlegendes Verständnis zu haben. Diese App ist aber dafür gemacht, dir zu zeigen, *wie* RSA mathematisch genau funktioniert!
+
+                Bereit? Los geht's! 🚀
+                """,
+                "emoji": "⚠️"
+            },
+            {
+                "title": "Schritt 1: Schlüssel erstellen",
+                "content": """
+                **Was passiert:** Die App erstellt einen öffentlichen Schlüssel (e, n) und einen privaten Schlüssel (d, n).
+
+                1. Gehe zum Tab "🔑 Schlüssel erstellen"
+                2. Wähle eine Bitgröße für die Primzahlen (8, 16 oder 128 Bit)
+                3. Klicke auf "Schlüssel erstellen"
+                4. Schau dir den animierten Schritt-für-Schritt-Prozess an!
+
+                **Warum das wichtig ist:**
+                - Öffentlicher Schlüssel = Mit jedem teilbar (wie deine E-Mail-Adresse)
+                - Privater Schlüssel = Geheim halten! (wie dein Passwort)
+                """,
+                "emoji": "🔑"
+            },
+            {
+                "title": "Schritt 2: Eine Nachricht verschlüsseln",
+                "content": """
+                **Was passiert:** Deine Nachricht wird mit dem öffentlichen Schlüssel in Zahlen umgewandelt.
+
+                1. Gehe zum Tab "🔒 Verschlüsseln"
+                2. Tippe deine Nachricht ein (z. B. "Hallo")
+                3. Die App verschlüsselt sie mit den erstellten Schlüsseln
+                4. Du erhältst verschlüsselte Zahlen, die wie Kauderwelsch aussehen!
+
+                **Optional:** Verwende eigene öffentliche Schlüssel, um mit anderen Schlüsseln zu testen.
+                """,
+                "emoji": "🔒"
+            },
+            {
+                "title": "Schritt 3: Eine Nachricht entschlüsseln",
+                "content": """
+                **Was passiert:** Die verschlüsselten Zahlen werden mit dem privaten Schlüssel zurück in lesbaren Text umgewandelt.
+
+                1. Gehe zum Tab "🔓 Entschlüsseln"
+                2. Füge die verschlüsselten Zahlen ein (die aus der Verschlüsselung)
+                3. Die App entschlüsselt sie mit dem passenden privaten Schlüssel
+                4. Du erhältst deine Originalnachricht zurück!
+
+                **Wichtig:** Du kannst NUR mit dem passenden privaten Schlüssel entschlüsseln. Der falsche Schlüssel liefert Kauderwelsch.
+                """,
+                "emoji": "🔓"
+            },
+            {
+                "title": "Testen mit eigenen Schlüsseln",
+                "content": """
+                **Fortgeschrittene Funktion:** Du kannst RSA mit deinen eigenen Schlüsseln testen!
+
+                1. **Verschlüsseln-Tab:** Aktiviere "Eigenen öffentlichen Schlüssel verwenden" und gib e und n ein
+                2. **Entschlüsseln-Tab:** Aktiviere "Eigenen privaten Schlüssel verwenden" und gib d und n ein
+
+                **Probiere das:**
+                - Verschlüssele mit einem öffentlichen Schlüssel (e₁, n)
+                - Versuche, mit einem ANDEREN privaten Schlüssel (d₂, n) zu entschlüsseln
+                - Sieh, dass es nur Kauderwelsch ergibt! ✓ Das beweist, dass die Sicherheit funktioniert.
+
+                Nur der passende private Schlüssel kann entschlüsseln!
+                """,
+                "emoji": "🧪"
+            },
+            {
+                "title": "Wichtige Erkenntnisse",
+                "content": """
+                **Warum RSA sicher ist:**
+                - ✅ Jeder kann mit dem öffentlichen Schlüssel verschlüsseln
+                - ✅ Nur du kannst mit dem privaten Schlüssel entschlüsseln
+                - ✅ Selbst wenn jemand e und n kennt, kann er d nicht berechnen
+                - ✅ Es zu brechen würde die Faktorisierung von n erfordern (extrem schwer!)
+
+                **Die Schlüsselgröße ist wichtig:**
+                - 8-Bit: Nur zur Veranschaulichung (leicht zu brechen)
+                - 16-Bit: Immer noch klein (zum Lernen)
+                - 128-Bit: Viel stärker (aber immer noch nicht produktionsreif)
+                - Echte Systeme: 2048-4096 Bit
+                """,
+                "emoji": "💡"
+            },
+            {
+                "title": "Bereit zum Erkunden!",
+                "content": """
+                Du bist bereit! Hier ist, was du ausprobieren kannst:
+
+                1. **Schlüssel erstellen** - Beobachte die Mathematik in Echtzeit
+                2. **Verschlüsseln** - Tippe eine geheime Nachricht ein und sieh, wie sie verschlüsselt wird
+                3. **Entschlüsseln** - Entschlüssele sie zurück und überprüfe, ob sie übereinstimmt
+                4. **Experimentieren** - Probiere eigene Schlüssel aus und schau, was kaputt geht!
+                5. **Lernen** - Schau im Tab "📖Infos" für tiefere Erklärungen vorbei
+
+                **Viel Spaß beim Erkunden der Kryptografie!** 🚀
+                """,
+                "emoji": "🚀"
+            }
+        ]
+
     return [
         {
             "title": "Welcome to RSA Encryption",
@@ -134,8 +263,27 @@ def get_tutorial_steps():
     ]
 
 
-def get_asymmetric_explanation_intro():
+def get_asymmetric_explanation_intro(lang="en"):
     """Returns the analogy and motivation part of the asymmetric encryption explanation."""
+    if lang == "de":
+        return """
+        **Stell dir einen Briefkasten mit einem besonderen Schloss vor:**
+
+        - 📬 Jeder kann einen Brief durch den Schlitz in den Briefkasten einwerfen (der **öffentliche Schlüssel**)
+        - 🔑 Aber nur der Besitzer hat den Schlüssel, um den Briefkasten zu öffnen und die Briefe zu lesen (der **private Schlüssel**)
+
+        Das ist die Grundidee der asymmetrischen Verschlüsselung! Anders als bei einem normalen Schloss, bei dem derselbe Schlüssel auf- und zuschließt, hat man hier **zwei verschiedene Schlüssel**:
+
+        - **Öffentlicher Schlüssel** — verschließt (verschlüsselt) die Nachricht. Kann sicher an jeden weitergegeben werden, sogar an Feinde.
+        - **Privater Schlüssel** — öffnet (entschlüsselt) die Nachricht. Niemals mit jemandem teilen.
+
+        **Warum zwei Schlüssel statt einem?**
+
+        Bei einem einzigen gemeinsamen Schlüssel (symmetrische Verschlüsselung) brauchen beide Personen den *gleichen* geheimen Schlüssel — der also irgendwie ausgetauscht werden muss, und jeder, der ihn abfängt, kann alles mitlesen. Asymmetrische Verschlüsselung löst das: Du kannst deinen öffentlichen Schlüssel der ganzen Welt zeigen, und Leute können dir Geheimnisse schicken, die **nur du** lesen kannst, ohne vorher heimlich einen Schlüssel austauschen zu müssen.
+
+        **Ein einfacher Ablauf aus der echten Welt:**
+        """
+
     return """
     **Imagine a mailbox with a special lock:**
 
@@ -155,8 +303,20 @@ def get_asymmetric_explanation_intro():
     """
 
 
-def get_asymmetric_explanation_outro():
+def get_asymmetric_explanation_outro(lang="en"):
     """Returns the wrap-up part of the asymmetric encryption explanation, shown after the diagram."""
+    if lang == "de":
+        return """
+        1. Bob teilt seinen **öffentlichen Schlüssel** mit jedem, auch mit Alice
+        2. Alice nimmt ihre Nachricht, **"Ruf mich heute an"**, und verschlüsselt sie mit Bobs öffentlichem Schlüssel zu Kauderwelsch: **"dh12#djdi2+rg"**
+        3. Alice schickt das Kauderwelsch an Bob — fängt es jemand ab, ist es unlesbar
+        4. Bob entschlüsselt das Kauderwelsch mit seinem **privaten Schlüssel** zurück zu **"Ruf mich heute an"**
+
+        Nur Bobs privater Schlüssel kann umkehren, was Bobs öffentlicher Schlüssel verschlüsselt hat — deshalb kann jeder seinen öffentlichen Schlüssel sicher verwenden, aber nur er kann das Ergebnis lesen.
+
+        Genau das macht RSA — nur dass statt eines physischen Briefkastens Mathematik diesen "Schloss"- und "Schlüssel"-Effekt erzeugt. Der Rest dieses Tutorials zeigt dir genau, wie!
+        """
+
     return """
     1. Bob shares his **public key** with anyone, including Alice
     2. Alice takes her message, **"Call me today"**, and combines it with Bob's public key to encrypt it into gibberish: **"dh12#djdi2+rg"**
@@ -169,8 +329,65 @@ def get_asymmetric_explanation_outro():
     """
 
 
-def get_info_content():
+def get_info_content(lang="en"):
     """Returns the content for the 'How RSA Works' info tab."""
+    if lang == "de":
+        return {
+            "basics": """
+            **RSA (Rivest-Shamir-Adleman)** ist ein asymmetrischer Verschlüsselungsalgorithmus, der zwei Schlüssel verwendet:
+
+            - **Öffentlicher Schlüssel (e, n)**: Kann mit jedem geteilt werden. Wird zum Verschlüsseln von Nachrichten verwendet.
+            - **Privater Schlüssel (d, n)**: Bleibt geheim. Wird zum Entschlüsseln von Nachrichten verwendet.
+
+            Die Magie: Etwas, das mit dem öffentlichen Schlüssel verschlüsselt wurde, kann NUR mit dem privaten Schlüssel entschlüsselt werden.
+            """,
+            "mathematics": """
+            1. **Erzeuge zwei große Primzahlen** (p und q)
+            2. **Berechne n** = p × q (der Modulus, in beiden Schlüsseln enthalten)
+            3. **Berechne φ(n)** = (p-1) × (q-1) (Eulersche Phi-Funktion)
+            4. **Wähle e** (öffentlicher Exponent) = meist 65537 (muss teilerfremd zu φ sein)
+            5. **Berechne d** (privater Exponent) = das modulare Inverse von e (mod φ)
+
+            **Verschlüsselung:** Geheimtext = Nachricht^e mod n
+
+            **Entschlüsselung:** Nachricht = Geheimtext^d mod n
+            """,
+            "deterministic_issue": """
+            **Das Problem:** In dieser einfachen Implementierung verschlüsselt sich dasselbe Zeichen immer zur selben Zahl.
+
+            Beispiel: "hallo" wird immer zu [542, 189, 203, 203, 445]
+
+            Ein Angreifer kann mit Häufigkeitsanalyse erraten, welche Buchstaben du verschlüsselst!
+            """,
+            "hybrid_solution": """
+            **Echte Verschlüsselungssoftware (wie GPG, PGP, Signal) verwendet hybride Verschlüsselung:**
+
+            1. **Erzeuge einen zufälligen symmetrischen Schlüssel** (256-Bit-AES-Schlüssel)
+            2. **Verschlüssele deine eigentliche Nachricht** mit dem AES-Schlüssel (schnell, und jede Verschlüsselung ist anders!)
+            3. **Verschlüssele den AES-Schlüssel** mit RSA (nur den 256-Bit-Schlüssel, nicht die ganze Nachricht)
+            4. **Sende beides:** verschlüsselte Nachricht + verschlüsselter Schlüssel
+
+            **Vorteile:**
+            - ✅ Jede Verschlüsselung ist anders (auch für dieselbe Nachricht)
+            - ✅ RSA verschlüsselt nur einen kleinen Schlüssel (schnell)
+            - ✅ AES-Verschlüsselung ist sehr schnell
+            - ✅ Sicher gegen Häufigkeitsanalyse
+
+            **Warum nicht einfach nur RSA verwenden?**
+            - RSA ist langsam (besonders bei großen Schlüsseln)
+            - RSA kann nur kleine Datenmengen verschlüsseln
+            - Rohes RSA ist anfällig für Angriffe
+
+            Deshalb verwenden PGP/GPG/Signal alle diesen hybriden Ansatz!
+            """,
+            "enhancements": """
+            - **OAEP-Padding:** Fügt vor der RSA-Verschlüsselung Zufälligkeit hinzu
+            - **Schlüsselgrößen:** Echte Systeme verwenden 2048-4096-Bit-Schlüssel (nicht 16-Bit!)
+            - **Digitale Signaturen:** Nachrichten mit dem privaten Schlüssel signieren, um Authentizität zu belegen
+            - **Schlüsselablauf:** Schlüssel laufen ab und müssen erneuert werden
+            """
+        }
+
     return {
         "basics": """
         **RSA (Rivest-Shamir-Adleman)** is an asymmetric encryption algorithm that uses two keys:

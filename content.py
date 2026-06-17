@@ -134,6 +134,41 @@ def get_tutorial_steps():
     ]
 
 
+def get_asymmetric_explanation_intro():
+    """Returns the analogy and motivation part of the asymmetric encryption explanation."""
+    return """
+    **Imagine a mailbox with a special lock:**
+
+    - 📬 Anyone can drop a letter into the mailbox through the slot (the **public key**)
+    - 🔑 But only the owner has the key to open the mailbox and read the letters (the **private key**)
+
+    That's the core idea behind asymmetric encryption! Unlike a normal lock where the same key locks and unlocks, here you have **two different keys**:
+
+    - **Public key** — locks (encrypts) the message. Safe to give to anyone, even your enemies.
+    - **Private key** — unlocks (decrypts) the message. Never share this with anyone.
+
+    **Why two keys instead of one?**
+
+    With a single shared key (symmetric encryption), both people need the *same* secret key — which means it has to be exchanged somehow, and anyone who intercepts it can read everything. Asymmetric encryption solves this: you can publish your public key to the entire world, and people can send you secrets that **only you** can read, without ever needing to secretly share a key first.
+
+    **A simple real-world flow:**
+    """
+
+
+def get_asymmetric_explanation_outro():
+    """Returns the wrap-up part of the asymmetric encryption explanation, shown after the diagram."""
+    return """
+    1. Bob shares his **public key** with anyone, including Alice
+    2. Alice takes her message, **"Call me today"**, and combines it with Bob's public key to encrypt it into gibberish: **"dh12#djdi2+rg"**
+    3. Alice sends that gibberish to Bob — if anyone intercepts it, it's unreadable
+    4. Bob combines the gibberish with his **private key** to decrypt it back into **"Call me today"**
+
+    Only Bob's private key can undo what Bob's public key encrypted — that's why anyone can safely use his public key, but only he can read the result.
+
+    This is exactly what RSA does — except instead of a physical mailbox, it uses math to create that "lock" and "key" effect. The rest of this tutorial will show you exactly how!
+    """
+
+
 def get_info_content():
     """Returns the content for the 'How RSA Works' info tab."""
     return {

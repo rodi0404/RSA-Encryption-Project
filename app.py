@@ -3,19 +3,20 @@ from sympy import randprime
 import math
 import time
 import textwrap
-from content import get_tutorial_steps, get_info_content
+from content import get_tutorial_steps, get_info_content, get_asymmetric_explanation_intro, get_asymmetric_explanation_outro
 
 st.set_page_config(page_title="RSA Encryption Tool", layout="centered", initial_sidebar_state="expanded")
 
 st.markdown("""
     <style>
     .main { max-width: 800px; }
+    [data-testid="stHeaderActionElements"] { display: none; }
     </style>
 """, unsafe_allow_html=True)
 
 col1, col2 = st.columns([4, 1])
 with col1:
-    st.title("🔐 RSA Encryption Project")
+    st.title("🔐 Learning RSA Encryption")
 with col2:
     st.link_button("🔗 Github", "https://github.com/rodi0404/RSA-Encryption-Project", use_container_width=True)
 
@@ -123,6 +124,7 @@ if "keys_generated" not in st.session_state:
     st.session_state.decryption_animation_paused = False
     st.session_state.decryption_animation_pause_time = 0
     st.session_state.active_tab = 0
+    st.session_state.show_asymmetric_explanation = False
 
 tabs = st.tabs(["📚 Tutorial", "🔑 Generate Keys", "🔒 Encrypt", "🔓 Decrypt", "📖Infos"])
 tab0, tab1, tab2, tab3, tab4 = tabs
@@ -131,54 +133,69 @@ tab0, tab1, tab2, tab3, tab4 = tabs
 if st.session_state.active_tab == 1:
     st.session_state.active_tab = 0  # Reset immediately so it can be triggered again
     # Click the Generate Keys tab using Streamlit's internal mechanism
-    import streamlit.components.v1 as components
-    components.html("""
+    st.iframe("""
     <script>
     var tabs = window.parent.document.querySelectorAll('[role="tab"]');
     if (tabs.length > 1) {
         tabs[1].click();
     }
     </script>
-    """, height=0)
+    """, height=1)
 
 with tab0:
     st.header("📚 How to Use This App")
 
-    # Load tutorial steps from content module
-    tutorial_steps = get_tutorial_steps()
-
-    # Navigation
-    col_left, col_center, col_right = st.columns([1, 3, 1])
-
-    with col_left:
-        if st.button("← Back", use_container_width=True, disabled=st.session_state.tutorial_step == 0):
-            st.session_state.tutorial_step = max(0, st.session_state.tutorial_step - 1)
+    if st.session_state.show_asymmetric_explanation:
+        if st.button("← Back to Tutorial", use_container_width=True):
+            st.session_state.show_asymmetric_explanation = False
             st.rerun()
 
-    with col_right:
-        is_last_page = st.session_state.tutorial_step == len(tutorial_steps) - 1
-        if st.button("Next →", use_container_width=True, disabled=False):
-            if is_last_page:
-                # Go to Generate Keys tab
-                st.session_state.active_tab = 1
-            else:
-                st.session_state.tutorial_step = min(len(tutorial_steps) - 1, st.session_state.tutorial_step + 1)
-            st.rerun()
+        st.markdown("---")
+        st.markdown("## 🔐 What Is Asymmetric Encryption?")
+        st.markdown(get_asymmetric_explanation_intro())
+        st.image("image.png", caption="Alice encrypts with Bob's public key, only Bob's private key can decrypt it")
+        st.markdown(get_asymmetric_explanation_outro())
+    else:
+        # Load tutorial steps from content module
+        tutorial_steps = get_tutorial_steps()
 
-    with col_center:
-        step_num = st.session_state.tutorial_step + 1
-        st.markdown(f"<p style='text-align: center;'>Page {step_num} of {len(tutorial_steps)}</p>", unsafe_allow_html=True)
+        # Navigation
+        col_left, col_center, col_right = st.columns([1, 3, 1])
 
-    # Display current step
-    st.markdown("---")
-    current_step = tutorial_steps[st.session_state.tutorial_step]
+        with col_left:
+            if st.button("← Back", use_container_width=True, disabled=st.session_state.tutorial_step == 0):
+                st.session_state.tutorial_step = max(0, st.session_state.tutorial_step - 1)
+                st.rerun()
 
-    st.markdown(f"## {current_step['emoji']} {current_step['title']}")
-    st.markdown(current_step['content'])
+        with col_right:
+            is_last_page = st.session_state.tutorial_step == len(tutorial_steps) - 1
+            if st.button("Next →", use_container_width=True, disabled=False):
+                if is_last_page:
+                    # Go to Generate Keys tab
+                    st.session_state.active_tab = 1
+                else:
+                    st.session_state.tutorial_step = min(len(tutorial_steps) - 1, st.session_state.tutorial_step + 1)
+                st.rerun()
 
-    # Progress indicator
-    progress = st.session_state.tutorial_step / (len(tutorial_steps) - 1)
-    st.progress(progress)
+        with col_center:
+            step_num = st.session_state.tutorial_step + 1
+            st.markdown(f"<p style='text-align: center;'>Page {step_num} of {len(tutorial_steps)}</p>", unsafe_allow_html=True)
+
+        # Display current step
+        st.markdown("---")
+        current_step = tutorial_steps[st.session_state.tutorial_step]
+
+        st.markdown(f"## {current_step['emoji']} {current_step['title']}")
+        st.markdown(current_step['content'])
+
+        if st.session_state.tutorial_step == 1:
+            if st.button("🔐 What is asymmetric encryption?", use_container_width=True):
+                st.session_state.show_asymmetric_explanation = True
+                st.rerun()
+
+        # Progress indicator
+        progress = st.session_state.tutorial_step / (len(tutorial_steps) - 1)
+        st.progress(progress)
 
 with tab1:
     st.header("Generate RSA Keys")
